@@ -1,6 +1,47 @@
 Changelog
 ==========
 
+Version 5.1.2 *(2019-04-08)*
+----------------------------
+
+ * Some translation improvements
+
+Version 5.1.1 *(2019-03-10)*
+----------------------------
+
+ * Some stability and translation improvements
+
+Version 5.1.0 *(2019-01-11)*
+----------------------------
+
+ * Fixed headset button handling
+ * Fixed a couple other smaller glitches + translation improvements
+
+Version 5.0.3 *(2018-10-25)*
+----------------------------
+
+ * Added a couple stability improvements
+
+Version 5.0.2 *(2018-10-19)*
+----------------------------
+
+ * Added a couple stability and UX improvements
+
+Version 5.0.1 *(2018-10-14)*
+----------------------------
+
+ * Fixing a crash at getting the album art
+ * Replacing the G+ button with Reddit
+
+Version 5.0.0 *(2018-10-12)*
+----------------------------
+
+ * Increase the minimal Android OS version required to 5 (Lollipop)
+ * Adding an option for toggling previous/next headset buttons (by Pawel)
+ * Search the song folder for album art, if metadata is empty (by Pawel)
+ * Show the Toggle Autoplay menu item at third party intents too
+ * Rewrote file selecting for better stability
+
 Version 4.3.1 *(2018-09-29)*
 ----------------------------
 

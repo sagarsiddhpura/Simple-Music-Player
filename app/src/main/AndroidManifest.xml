@@ -135,13 +135,6 @@
         </receiver>
 
         <receiver
-            android:name=".receivers.HeadsetPlugReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.ACTION_HEADSET_PLUG"/>
-            </intent-filter>
-        </receiver>
-
-        <receiver
             android:name=".receivers.RemoteControlReceiver"
             android:enabled="true"
             android:exported="true">
@@ -151,10 +144,17 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".receivers.HeadsetPlugReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_HEADSET_PLUG"/>
+            </intent-filter>
+        </receiver>
+
         <receiver android:name=".receivers.ControlActionsListener"/>
 
         <provider
-            android:name="android.support.v4.content.FileProvider"
+            android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">

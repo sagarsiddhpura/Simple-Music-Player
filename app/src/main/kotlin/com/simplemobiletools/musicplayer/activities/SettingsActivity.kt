@@ -31,9 +31,9 @@ class SettingsActivity : SimpleActivity() {
         setupCustomizeWidgetColors()
         setupManagePlaylists()
         setupUseEnglish()
-        setupAvoidWhatsNew()
         setupShowInfoBubble()
         setupShowAlbumCover()
+        setupSwapPrevNext()
         setupEqualizer()
         setupReplaceTitle()
         updateTextColors(settings_scrollview)
@@ -71,14 +71,6 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun setupAvoidWhatsNew() {
-        settings_avoid_whats_new.isChecked = config.avoidWhatsNew
-        settings_avoid_whats_new_holder.setOnClickListener {
-            settings_avoid_whats_new.toggle()
-            config.avoidWhatsNew = settings_avoid_whats_new.isChecked
-        }
-    }
-
     private fun setupManagePlaylists() {
         settings_manage_playlists_holder.setOnClickListener {
             startActivity(Intent(this, PlaylistsActivity::class.java))
@@ -98,6 +90,15 @@ class SettingsActivity : SimpleActivity() {
         settings_show_album_cover_holder.setOnClickListener {
             settings_show_album_cover.toggle()
             config.showAlbumCover = settings_show_album_cover.isChecked
+        }
+    }
+
+
+    private fun setupSwapPrevNext() {
+        settings_swap_prev_next.isChecked = config.swapPrevNext
+        settings_swap_prev_next_holder.setOnClickListener {
+            settings_swap_prev_next.toggle()
+            config.swapPrevNext = settings_swap_prev_next.isChecked
         }
     }
 

@@ -1,10 +1,10 @@
 package com.simplemobiletools.musicplayer.databases
 
-import android.arch.persistence.db.SupportSQLiteDatabase
-import android.arch.persistence.room.Database
-import android.arch.persistence.room.Room
-import android.arch.persistence.room.RoomDatabase
 import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.simplemobiletools.musicplayer.R
 import com.simplemobiletools.musicplayer.extensions.playlistDAO
 import com.simplemobiletools.musicplayer.helpers.ALL_SONGS_PLAYLIST_ID
@@ -12,6 +12,7 @@ import com.simplemobiletools.musicplayer.interfaces.PlaylistsDao
 import com.simplemobiletools.musicplayer.interfaces.SongsDao
 import com.simplemobiletools.musicplayer.models.Playlist
 import com.simplemobiletools.musicplayer.models.Song
+import com.simplemobiletools.musicplayer.objects.MyExecutor
 import java.util.concurrent.Executors
 
 @Database(entities = [(Song::class), (Playlist::class)], version = 1)
@@ -29,6 +30,7 @@ abstract class SongsDatabase : RoomDatabase() {
                 synchronized(SongsDatabase::class) {
                     if (db == null) {
                         db = Room.databaseBuilder(context.applicationContext, SongsDatabase::class.java, "songs.db")
+                                .setQueryExecutor(MyExecutor.myExecutor)
                                 .addCallback(object : Callback() {
                                     override fun onCreate(db: SupportSQLiteDatabase) {
                                         super.onCreate(db)

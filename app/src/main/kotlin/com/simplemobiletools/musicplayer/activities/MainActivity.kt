@@ -4,30 +4,23 @@ import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Paint
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.support.v4.view.MenuItemCompat
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.SearchView
 import android.view.Menu
 import android.view.MenuItem
 import android.view.ViewGroup
 import android.widget.SeekBar
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.Target
+import androidx.appcompat.widget.SearchView
+import androidx.core.view.MenuItemCompat
 import com.simplemobiletools.commons.dialogs.FilePickerDialog
 import com.simplemobiletools.commons.dialogs.RadioGroupDialog
 import com.simplemobiletools.commons.extensions.*
-import com.simplemobiletools.commons.helpers.LICENSE_MULTISELECT
 import com.simplemobiletools.commons.helpers.LICENSE_OTTO
+import com.simplemobiletools.commons.helpers.LICENSE_PICASSO
 import com.simplemobiletools.commons.helpers.PERMISSION_WRITE_STORAGE
 import com.simplemobiletools.commons.helpers.REAL_FILE_PATH
 import com.simplemobiletools.commons.interfaces.RecyclerScrollCallback
@@ -52,6 +45,7 @@ import com.simplemobiletools.musicplayer.models.Song
 import com.simplemobiletools.musicplayer.services.MusicService
 import com.squareup.otto.Bus
 import com.squareup.otto.Subscribe
+import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.item_navigation.*
 import kotlinx.android.synthetic.main.item_navigation.view.*
@@ -66,7 +60,6 @@ class MainActivity : SimpleActivity(), SongListListener {
     private var wasInitialPlaylistSet = false
     private var lastFilePickerPath = ""
     private var artView: ViewGroup? = null
-    private var oldCover: Drawable? = null
 
     private var actionbarSize = 0
     private var topArtHeight = 0
@@ -150,6 +143,7 @@ class MainActivity : SimpleActivity(), SongListListener {
         }
 
         setupIconColors()
+        setupIconDescriptions()
         markCurrentSong()
         updateTextColors(main_holder)
         getSongsAdapter()?.updateColors()
@@ -191,7 +185,6 @@ class MainActivity : SimpleActivity(), SongListListener {
 
         menu.apply {
             findItem(R.id.sort).isVisible = !isThirdPartyIntent
-            findItem(R.id.toggle_autoplay).isVisible = !isThirdPartyIntent
             findItem(R.id.sort).isVisible = !isThirdPartyIntent
             findItem(R.id.open_playlist).isVisible = !isThirdPartyIntent
             findItem(R.id.add_folder_to_playlist).isVisible = !isThirdPartyIntent
@@ -244,29 +237,6 @@ class MainActivity : SimpleActivity(), SongListListener {
         }
     }
 
-    private fun handleSongMigration() {
-        dbHelper.getAllSongs {
-            if (it.isEmpty()) {
-                config.wereSongsMigrated = true
-                return@getAllSongs
-            }
-
-            val songs = it
-            dbHelper.getAllPlaylists {
-                it.forEach {
-                    val playlist = it
-                    val newPlaylistId = if (playlist.id == ALL_SONGS_PLAYLIST_ID) ALL_SONGS_PLAYLIST_ID else playlistDAO.insert(playlist.copy(id = 0)).toInt()
-                    val playlistSongPaths = songs.filter { it.playListId == newPlaylistId }.map { it.path } as ArrayList<String>
-                    RoomHelper(applicationContext).addSongsToPlaylist(playlistSongPaths, newPlaylistId)
-                }
-
-                playlistChanged(ALL_SONGS_PLAYLIST_ID)
-                config.wereSongsMigrated = true
-                dbHelper.clearDatabase()
-            }
-        }
-    }
-
     private fun setTopArtHeight() {
         topArtHeight = if (config.showAlbumCover) resources.getDimensionPixelSize(R.dimen.top_art_height) else 0
         artView!!.setPadding(0, topArtHeight, 0, 0)
@@ -309,7 +279,7 @@ class MainActivity : SimpleActivity(), SongListListener {
                     searchQueryChanged("")
                     getSongsAdapter()?.searchClosed()
                     markCurrentSong()
-                    (songs_list.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(0, 0)
+                    (songs_list.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).scrollToPositionWithOffset(0, 0)
                     songs_fastscroller?.setScrollToY(0)
                 }
                 isSearchOpen = false
@@ -323,14 +293,14 @@ class MainActivity : SimpleActivity(), SongListListener {
     }
 
     private fun launchAbout() {
-        val licenses = LICENSE_OTTO or LICENSE_MULTISELECT
+        val licenses = LICENSE_OTTO or LICENSE_PICASSO
 
         val faqItems = arrayListOf(
                 FAQItem(R.string.faq_1_title, R.string.faq_1_text),
                 FAQItem(R.string.faq_1_title_commons, R.string.faq_1_text_commons),
                 FAQItem(R.string.faq_4_title_commons, R.string.faq_4_text_commons),
-                FAQItem(R.string.faq_2_title_commons, R.string.faq_2_text_commons)
-        )
+                FAQItem(R.string.faq_2_title_commons, R.string.faq_2_text_commons),
+                FAQItem(R.string.faq_6_title_commons, R.string.faq_6_text_commons))
 
         startAboutActivity(R.string.app_name, licenses, BuildConfig.VERSION_NAME, faqItems, true)
     }
@@ -346,6 +316,7 @@ class MainActivity : SimpleActivity(), SongListListener {
         config.isShuffleEnabled = isShuffleEnabled
         shuffle_btn.applyColorFilter(if (isShuffleEnabled) getAdjustedPrimaryColor() else config.textColor)
         shuffle_btn.alpha = if (isShuffleEnabled) 1f else LOWER_ALPHA
+        shuffle_btn.contentDescription = getString(if (isShuffleEnabled) R.string.disable_shuffle else R.string.enable_shuffle)
         getSongsAdapter()?.updateShuffle(isShuffleEnabled)
         toast(if (isShuffleEnabled) R.string.shuffle_enabled else R.string.shuffle_disabled)
     }
@@ -355,6 +326,7 @@ class MainActivity : SimpleActivity(), SongListListener {
         config.repeatSong = repeatSong
         repeat_btn.applyColorFilter(if (repeatSong) getAdjustedPrimaryColor() else config.textColor)
         repeat_btn.alpha = if (repeatSong) 1f else LOWER_ALPHA
+        repeat_btn.contentDescription = getString(if (repeatSong) R.string.disable_song_repetition else R.string.enable_song_repetition)
         getSongsAdapter()?.updateRepeatSong(repeatSong)
         toast(if (repeatSong) R.string.song_repetition_enabled else R.string.song_repetition_disabled)
     }
@@ -513,12 +485,6 @@ class MainActivity : SimpleActivity(), SongListListener {
     }
 
     private fun initializePlayer() {
-        if (!config.wereSongsMigrated) {
-            Thread {
-                handleSongMigration()
-            }.start()
-        }
-
         if (isThirdPartyIntent) {
             initThirdPartyIntent()
         } else {
@@ -556,8 +522,14 @@ class MainActivity : SimpleActivity(), SongListListener {
         songs_fastscroller.updatePrimaryColor()
     }
 
+    private fun setupIconDescriptions() {
+        shuffle_btn.contentDescription = getString(if (config.isShuffleEnabled) R.string.disable_shuffle else R.string.enable_shuffle)
+        repeat_btn.contentDescription = getString(if (config.repeatSong) R.string.disable_song_repetition else R.string.enable_song_repetition)
+    }
+
     private fun songPicked(pos: Int) {
         setupIconColors()
+        setupIconDescriptions()
         Intent(this, MusicService::class.java).apply {
             putExtra(SONG_POS, pos)
             action = PLAYPOS
@@ -665,25 +637,20 @@ class MainActivity : SimpleActivity(), SongListListener {
             return
         }
 
-        Glide.with(this).clear(art_image)
         val coverToUse = if (MusicService.mCurrSongCover?.isRecycled == true) {
             resources.getColoredBitmap(R.drawable.ic_headset, config.textColor)
         } else {
             MusicService.mCurrSongCover
         }
 
-        val options = RequestOptions().placeholder(oldCover)
-        Glide.with(this)
-                .load(coverToUse)
-                .apply(options)
-                .listener(object : RequestListener<Drawable> {
-                    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean) = false
-
-                    override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-                        oldCover = resource?.constantState?.newDrawable()
-                        return false
-                    }
-                }).into(art_image)
+        // Picasso cannot load bitmaps/drawables directly, so as a workaround load images as placeholders
+        val bitmapDrawable = BitmapDrawable(resources, coverToUse)
+        val uri: Uri? = null
+        Picasso.get()
+                .load(uri)
+                .fit()
+                .placeholder(bitmapDrawable)
+                .into(art_image)
     }
 
     private fun searchQueryChanged(text: String) {
